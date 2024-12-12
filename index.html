@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEKIDS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #1a1a40;
+            color: white;
+        }
+        .pagina {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .pagina.visible {
+            display: flex;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-size: 2.5rem;
+        }
+        .logo {
+            width: 100px;
+            margin-bottom: 20px;
+        }
+        .inputs-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .ruleta-container {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            margin-top: 20px;
+        }
+        .ruleta {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 5px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform-origin: center;
+        }
+        .flecha {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 25px solid red;
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 200px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #participantes {
+            margin-top: 10px;
+            font-size: 1rem;
+        }
+        .participante {
+            background-color: #333;
+            color: white;
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 5px;
+        }
+        .boton-girar {
+            margin-top: 30px;
+        }
+        .ventana-emergente {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #39ff14;
+            color: black;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            display: none;
+        }
+        .ventana-emergente img {
+            width: 50px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="pagina-inicial" class="pagina visible">
+        <img src="https://dekids.com.mx/wp-content/uploads/2020/08/LOGO-Dekids-2.png" alt="DEKIDS Logo" class="logo">
+        <h1>DEKIDS</h1>
+        <div class="inputs-container">
+            <input id="nombre" type="text" placeholder="Ingresa un nombre">
+            <button onclick="agregarParticipante()">Agregar Participante</button>
+            <button onclick="mostrarRuleta()">Ir a la Ruleta</button>
+        </div>
+        <div id="participantes"></div>
+    </div>
+
+    <div id="pagina-ruleta" class="pagina">
+        <img src="https://dekids.com.mx/wp-content/uploads/2020/08/LOGO-Dekids-2.png" alt="DEKIDS Logo" class="logo">
+        <h1>DEKIDSERS</h1>
+        <div class="ruleta-container">
+            <div class="flecha"></div>
+            <canvas id="ruleta" class="ruleta"></canvas>
+        </div>
+        <button class="boton-girar" onclick="girarRuleta()">Girar Ruleta</button>
+    </div>
+
+    <div id="ventana-ganador" class="ventana-emergente">
+        <p id="mensaje-ganador"></p>
+        <img src="https://dekids.com.mx/wp-content/uploads/2020/08/LOGO-Dekids-2.png" alt="Logo">
+    </div>
+
+    <script>
+        const nombres = [];
+        const canvas = document.getElementById('ruleta');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 350;
+        canvas.height = 350;
+        let anguloActual = 0;
+
+        function dibujarRuleta() {
+            const total = nombres.length;
+            if (total === 0) return;
+            const anguloPorcion = (2 * Math.PI) / total;
+            const colores = ['#00ff00', '#32cd32', '#3cb371', '#2e8b57', '#228b22', '#6b8e23'];
+            nombres.forEach((nombre, i) => {
+                const anguloInicio = anguloPorcion * i;
+                const anguloFin = anguloInicio + anguloPorcion;
+
+                ctx.beginPath();
+                ctx.moveTo(175, 175);
+                ctx.arc(175, 175, 175, anguloInicio, anguloFin);
+                ctx.fillStyle = colores[i % colores.length];
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(175, 175);
+                ctx.rotate(anguloInicio + anguloPorcion / 2);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 16px Arial';
+                ctx.fillText(nombre, 160, 5);
+                ctx.restore();
+            });
+        }
+
+        function agregarParticipante() {
+            const input = document.getElementById('nombre');
+            const nombre = input.value.trim();
+            if (nombre && !nombres.includes(nombre)) {
+                nombres.push(nombre);
+                input.value = '';
+                actualizarLista();
+            }
+        }
+
+        function actualizarLista() {
+            const lista = document.getElementById('participantes');
+            lista.innerHTML = nombres.map(nombre => `<div class="participante">${nombre}</div>`).join('');
+        }
+
+        function mostrarRuleta() {
+            if (nombres.length === 0) return alert('Agrega al menos un participante.');
+            document.getElementById('pagina-inicial').classList.remove('visible');
+            document.getElementById('pagina-ruleta').classList.add('visible');
+            dibujarRuleta();
+        }
+
+        function mostrarGanador(ganador) {
+            const ventana = document.getElementById('ventana-ganador');
+            const mensaje = document.getElementById('mensaje-ganador');
+            mensaje.textContent = `El ganador es: ${ganador}`;
+            ventana.style.display = 'block';
+            setTimeout(() => {
+                ventana.style.display = 'none';
+            }, 3000);
+        }
+
+        function girarRuleta() {
+            if (nombres.length === 0) return alert('No hay participantes en la ruleta.');
+
+            const vueltas = Math.random() * 3 + 3; // de 3 a 6 vueltas
+            const anguloFinal = vueltas * 360 + Math.random() * 360;
+            const ganadorIndex = Math.floor((anguloFinal % 360) / (360 / nombres.length));
+
+            const animacion = setInterval(() => {
+                anguloActual += 10;
+                if (anguloActual >= anguloFinal) {
+                    clearInterval(animacion);
+                    const ganador = nombres.splice(ganadorIndex, 1)[0];
+                    mostrarGanador(ganador);
+                    dibujarRuleta();
+                }
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.save();
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.rotate((anguloActual * Math.PI) / 180);
+                ctx.translate(-canvas.width / 2, -canvas.height / 2);
+                dibujarRuleta();
+                ctx.restore();
+            }, 20);
+        }
+
+    </script>
+</body>
+</html>
